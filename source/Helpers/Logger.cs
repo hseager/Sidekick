@@ -21,10 +21,12 @@ namespace Sidekick.Helpers
                 Message = text,
                 State = state
             };
-            if(Logs.Count >= 100)
+
+            if (Logs.Count >= 100)
             {
                 Logs.RemoveAt(0);
             }
+
             Logs.Add(log);
             MessageLogged?.Invoke(null, null);
         }

@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Sidekick.Helpers.Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,37 +19,91 @@ namespace Sidekick.Helpers.POETradeAPI.Models
 
             if (itemType == typeof(EquippableItem))
             {
-                if(((EquippableItem)item).Rarity == StringConstants.RarityUnique)
+                if (((EquippableItem)item).Rarity == LanguageSettings.Provider.RarityUnique)
                 {
                     Query.Name = item.Name;
+                    Query.Filters.TypeFilter.Filters.Rarity = new FilterOption()
+                    {
+                        Option = "Unique",
+                    };
                 }
                 else
                 {
                     Query.Type = item.Type;
+                    Query.Filters.TypeFilter.Filters.Rarity = new FilterOption()
+                    {
+                        Option = "nonunique",
+                    };
 
                     if (!int.TryParse(((EquippableItem)item).ItemLevel, out var result))
                     {
                         throw new Exception("Couldn't parse Item Level");
                     }
 
-                    Query.Filters.MiscFilters.Filters.ItemLevel = new FilterValue()
+                    if (result >= 86)
                     {
-                        Min = result,
-                        Max = result,
-                    };
-
-                    Query.Filters.TypeFilter.Filters.Rarity = new FilterOption()
+                        Query.Filters.MiscFilters.Filters.ItemLevel = new FilterValue()
+                        {
+                            Min = 86
+                        };
+                    }
+                    else
                     {
-                        Option = ((EquippableItem)item).Rarity.ToLowerInvariant(),
-                    };
-                }             
+                        Query.Filters.MiscFilters.Filters.ItemLevel = new FilterValue()
+                        {
+                            Min = result,
+                            Max = result,
+                        };
+                    }
 
-                if(((EquippableItem)item).Links != null)        // Auto Search 5+ Links
+                    switch (((EquippableItem)item).Influence)
+                    {
+                        case InfluenceType.None:
+                            break;
+                        case InfluenceType.Shaper:
+                            Query.Filters.MiscFilters.Filters.ShaperItem = new FilterOption()
+                            {
+                                Option = "true"
+                            };
+                            break;
+                        case InfluenceType.Crusader:
+                            Query.Filters.MiscFilters.Filters.CrusaderItem = new FilterOption()
+                            {
+                                Option = "true"
+                            };
+                            break;
+                        case InfluenceType.Elder:
+                            Query.Filters.MiscFilters.Filters.ElderItem = new FilterOption()
+                            {
+                                Option = "true"
+                            };
+                            break;
+                        case InfluenceType.Hunter:
+                            Query.Filters.MiscFilters.Filters.HunterItem = new FilterOption()
+                            {
+                                Option = "true"
+                            };
+                            break;
+                        case InfluenceType.Redeemer:
+                            Query.Filters.MiscFilters.Filters.RedeemerItem = new FilterOption()
+                            {
+                                Option = "true"
+                            };
+                            break;
+                        case InfluenceType.Warlord:
+                            Query.Filters.MiscFilters.Filters.WarlordItem = new FilterOption()
+                            {
+                                Option = "true"
+                            };
+                            break;
+                    }
+                }
+
+                if (((EquippableItem)item).Links != null)        // Auto Search 5+ Links
                 {
                     Query.Filters.SocketFilter.Filters.Links = ((EquippableItem)item).Links;
                 }
             }
-
             else if (itemType == typeof(CurrencyItem))
             {
                 Query.Type = item.Name;
@@ -89,6 +144,44 @@ namespace Sidekick.Helpers.POETradeAPI.Models
             {
                 Query.Type = item.Type;
             }
+            else if (itemType == typeof(MapItem))
+            {
+                if (((MapItem)item).Rarity == LanguageSettings.Provider.RarityUnique)
+                {
+                    Query.Filters.TypeFilter.Filters.Rarity = new FilterOption()
+                    {
+                        Option = "Unique",
+                    };
+                }
+                else
+                {
+                    Query.Type = item.Type;
+                    Query.Filters.TypeFilter.Filters.Rarity = new FilterOption()
+                    {
+                        Option = "nonunique",
+                    };
+                }
+
+                if (!int.TryParse(((MapItem)item).MapTier, out var result))
+                {
+                    throw new Exception("Unable to parse Map Tier");
+                }
+
+                Query.Filters.MapFilter.Filters.MapTier = new FilterValue()       // Search correct map tier
+                {
+                    Min = result,
+                    Max = result,
+                };
+
+                Query.Filters.MapFilter.Filters.Blighted = new FilterOption()
+                {
+                    Option = ((MapItem)item).IsBlight,
+                };
+            }
+            else if (itemType == typeof(ProphecyItem))
+            {
+                Query.Name = item.Name;
+            }
             else
             {
                 throw new NotImplementedException();
@@ -115,36 +208,35 @@ namespace Sidekick.Helpers.POETradeAPI.Models
             {
                 var itemCategory = "Currency";
 
-                var itemName = item.Name.ToLowerInvariant();
-                if (itemName.EndsWith(" catalyst"))
+                if (item.Name.Contains(LanguageSettings.Provider.KeywordCatalyst))
                 {
                     itemCategory = "Catalysts";
                 }
-                else if (itemName.EndsWith(" oil"))
+                else if (item.Name.Contains(LanguageSettings.Provider.KeywordOil))
                 {
                     itemCategory = "Oils";
                 }
-                else if (itemName.EndsWith(" incubator"))
+                else if (item.Name.Contains(LanguageSettings.Provider.KeywordIncubator))
                 {
                     itemCategory = "Incubators";
                 }
-                else if (itemName.EndsWith(" scarab"))
+                else if (item.Name.Contains(LanguageSettings.Provider.KeywordScarab))
                 {
                     itemCategory = "Scarabs";
                 }
-                else if (itemName.EndsWith(" resonator"))
+                else if (item.Name.Contains(LanguageSettings.Provider.KeywordResonator))
                 {
                     itemCategory = "DelveResonators";
                 }
-                else if (itemName.EndsWith(" fossil"))
+                else if (item.Name.Contains(LanguageSettings.Provider.KeywordFossil))
                 {
                     itemCategory = "DelveFossils";
                 }
-                else if (itemName.StartsWith("vial "))
+                else if (item.Name.Contains(LanguageSettings.Provider.KeywordVial))
                 {
                     itemCategory = "Vials";
                 }
-                else if (itemName.Contains(" essence of "))
+                else if (item.Name.Contains(LanguageSettings.Provider.KeywordEssence))
                 {
                     itemCategory = "Essences";
                 }
@@ -156,6 +248,12 @@ namespace Sidekick.Helpers.POETradeAPI.Models
 
                 Exchange.Want.Add(itemId);
                 Exchange.Have.Add("chaos"); // TODO: Add support for other currency types?
+            }
+            else if (itemType == typeof(DivinationCardItem))
+            {
+                var itemId = TradeClient.StaticItemCategories.Where(c => c.Id == "Cards").FirstOrDefault().Entries.Where(c => c.Text == item.Name).FirstOrDefault().Id;
+                Exchange.Want.Add(itemId);
+                Exchange.Have.Add("chaos");
             }
         }
 
@@ -211,6 +309,8 @@ namespace Sidekick.Helpers.POETradeAPI.Models
         public RequierementFilter RequierementFilter { get; set; } = new RequierementFilter();
         [JsonProperty(PropertyName = "type_filters")]
         public TypeFilter TypeFilter { get; set; } = new TypeFilter();
+        [JsonProperty(PropertyName = "map_filters")]
+        public MapFilter MapFilter { get; set; } = new MapFilter();
     }
 
     public class MiscFilter
@@ -249,21 +349,19 @@ namespace Sidekick.Helpers.POETradeAPI.Models
         public TypeFilters Filters { get; set; } = new TypeFilters();
     }
 
+    public class MapFilter
+    {
+        public bool Disabled { get; set; }
+        public MapFilters Filters { get; set; } = new MapFilters();
+    }
+
     public class MiscFilters
     {
         public FilterValue Quality { get; set; }
-        [JsonProperty(PropertyName = "map_tier")]
-        public FilterValue MapTier { get; set; }
-        [JsonProperty(PropertyName = "map_iiq")]
-        public FilterValue MapIiq { get; set; }
         [JsonProperty(PropertyName = "gem_level")]
         public FilterValue GemLevel { get; set; }
         [JsonProperty(PropertyName = "ilvl")]
         public FilterValue ItemLevel { get; set; }
-        [JsonProperty(PropertyName = "map_packsize")]
-        public FilterValue MapPacksize { get; set; }
-        [JsonProperty(PropertyName = "map_iir")]
-        public FilterValue MapIir { get; set; }
         [JsonProperty(PropertyName = "talisman_art")]
         public FilterOption TalismanArt { get; set; }
         [JsonProperty(PropertyName = "alternate_art")]
@@ -272,6 +370,22 @@ namespace Sidekick.Helpers.POETradeAPI.Models
         public FilterOption Corrupted { get; set; }
         public FilterOption Crafted { get; set; }
         public FilterOption Enchanted { get; set; }
+        public FilterOption Veiled { get; set; }
+        public FilterOption Mirrored { get; set; }
+        [JsonProperty(PropertyName = "elder_item")]
+        public FilterOption ElderItem { get; set; }
+        [JsonProperty(PropertyName = "hunter_item")]
+        public FilterOption HunterItem { get; set; }
+        [JsonProperty(PropertyName = "shaper_item")]
+        public FilterOption ShaperItem { get; set; }
+        [JsonProperty(PropertyName = "warlord_item")]
+        public FilterOption WarlordItem { get; set; }
+        [JsonProperty(PropertyName = "crusader_item")]
+        public FilterOption CrusaderItem { get; set; }
+        [JsonProperty(PropertyName = "redeemer_item")]
+        public FilterOption RedeemerItem { get; set; }
+        [JsonProperty(PropertyName = "synthesised_item")]
+        public FilterOption SynthesisedItem { get; set; }
     }
 
     public class WeaponFilters
@@ -317,6 +431,24 @@ namespace Sidekick.Helpers.POETradeAPI.Models
     {
         public FilterOption Category { get; set; }
         public FilterOption Rarity { get; set; }
+    }
+
+    public class MapFilters
+    {
+        [JsonProperty(PropertyName = "map_iiq")]
+        public FilterValue MapIiq { get; set; }
+        [JsonProperty(PropertyName = "map_iir")]
+        public FilterValue MapIir { get; set; }
+        [JsonProperty(PropertyName = "map_tier")]
+        public FilterValue MapTier { get; set; }
+        [JsonProperty(PropertyName = "map_packsize")]
+        public FilterValue MapPacksize { get; set; }
+        [JsonProperty(PropertyName = "map_blighted")]
+        public FilterOption Blighted { get; set; }
+        [JsonProperty(PropertyName = "map_elder")]
+        public FilterOption Elder { get; set; }
+        [JsonProperty(PropertyName = "map_shaped")]
+        public FilterOption Shaped { get; set; }
     }
 
     public class FilterValue
